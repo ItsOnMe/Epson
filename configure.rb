@@ -15,103 +15,39 @@ require './lib/shell_utilities.rb'
 
 
 
-module Menu
-  @TOKEN = {
-    QA:   "0QampoLwiYRnlsGLmJDIwiRTBAyjSHeRrObF6QTRw",
-    PROD: "QFvwqlUQ1VMtT0td9G1iwl4SENEN2fCEZbhjmVHKaw"
-  }
-
+class Menu
+  def initialize
+    @TOKEN = {
+      QA:         "0QampoLwiYRnlsGLmJDIwiRTBAyjSHeRrObF6QTRw",
+      PRODUCTION: "QFvwqlUQ1VMtT0td9G1iwl4SENEN2fCEZbhjmVHKaw"
+    }
+  end
 
 
   # Begin menu loop
-  def self.start
-    state = :mode
+  def start
+    # Initial step
+    step = :mode
 
-    #TODO: Future cleanup. Break this into separate functions
-    #      e.g. with `state = step_x(state)`
-
-    while state != :done
+    while step != :done
       clear_screen
       display_menu
 
-      if state == :mode
-        @mode = nil
-        @mode = prompt_mode
-
-        state = :confirm_mode
-        next
-      end
-
-
-      if state == :confirm_mode
-        choice = prompt("You picked #{@mode.upcase}. Are you sure?", ['yes', 'no'], 'yes')
-
-        state = :model    if choice == 'yes'
-        if choice == 'no'
-          # Clear mode
-          @mode = nil
-          state = :mode
-        end
-
-        next
-      end
-
-      if state == :model
-        @model = prompt_model
-        state = :ip
-        next
-      end
-
-
-      if state == :ip
-        @ip = prompt_ip
-        state = :merchant
-        next
-      end
-
-
-      if state == :merchant
-        valid = false
-
-        until valid
-          merchant_id = prompt_merchant
-          valid = verify_merchant(@mode, merchant_id)
-        end
-
-        choice = prompt("Is this correct?", ['yes', 'no'])
-        next  if choice == 'no'
-
-
-        @merchant_id = merchant_id
-        state = :autoconfigure
-        next
-      end
-
-
-      if state == :autoconfigure
-        printf "Alright, let's configure the printer!\n\n"
-
-        password = prompt_password
-
-        autoconfigure(@mode, @merchant_id, @ip, password)
-
-        printf "\n\n"
-
-        choice = prompt("Configure another?", ['yes', 'no'], 'yes')
-        state = :ip   if choice == 'yes'
-        state = :done if choice == 'no'
-
-        # Cleanup
-        @ip = @merchant_id = nil
-
-        next
-      end
-
-
-      if state == :done
-        printf "\n\n"
-        printf "Goodbye!\n\n"
-        Kernel::exit()
+      step = case(step)
+      when :mode
+        step_mode
+      when :confirm_mode
+        step_mode_confirm
+      when :model
+        step_model
+      when :ip
+        step_ip
+      when :merchant
+        step_merchant
+      when :autoconfigure
+        step_autoconfigure
+      when :done
+        step_done
       end
 
     end
@@ -119,89 +55,139 @@ module Menu
 
 
 
-  # being anal.
-  def self.normalize_mode(mode)
-    mode = mode.downcase  if mode.is_a? String
-    return :QA    if [:QA,   'qa'].include? mode
-    return :PROD  if [:PROD, 'production'].include? mode
-    raise RuntimeError, "Cannot normalize invalid mode: #{mode}"
-  end
-
-
-
-  def self.display_menu
+  def display_menu
     clear_screen
 
-    header =  " ☼ ItsOnMe  --  Epson Printer Configuration"
-    header += "       [ Mode: #{@mode.upcase} ]  "  if @mode.present?
-    printf header + "\n"
+    # Add mode info, if present
+    mode_string = ""
+    if @mode.present?
+      # Right-align
+      spacing  = " " * (6 + (10 - @mode.length))
+
+      mode_string = spacing + "[ Mode: #{@mode.upcase.to_s} ]"
+    end
+
+    # Display header
+    printf " ☼ ItsOnMe  --  Epson Printer Configuration #{mode_string}\n"
     printf "----------------------------------------------------------------------\n"
 
-    if @model.present? and @ip.present?
-      printf "Model #{@model} printer, IP: #{@ip}\n"
+    # Display printer info, if present.
+    printer_info = []
+    printer_info << "Model #{@model}"  if @model.present?
+    printer_info << "IP: #{@ip}"       if @ip.present?
+    printf printer_info.join(", ")
+
+    printf "\n\n"
+  end
+
+
+
+  # ============ Steps ============ #
+
+
+  # --- Step: Mode ------------
+  def step_mode
+    @mode = nil
+    @mode = prompt_mode
+    :confirm_mode
+  end
+
+
+  # --- Step: Mode (confirm) ------------
+  def step_mode_confirm
+    choice = prompt("You picked #{@mode.upcase}. Are you sure?", ['yes', 'no'], 'yes')
+
+    if choice == 'no'
+      # Clear mode
+      @mode = nil
+      return :mode
     end
 
-    printf "\n\n"
+    :model
   end
 
 
-
-  def self.verify_merchant(mode, id)
-    mode = normalize_mode(mode)
-    url  = admt_api_url(mode, :validate)
-
-    json = JSON.parse RestClient.post(url, {
-      data: {
-        token: @TOKEN[mode],
-        merchant_id: id
-      }
-    })
+  # --- Step: Model ------------
+  def step_model
+    @model = prompt_model
+    :ip
+  end
 
 
-    # Failure response
-    if json['status'] == 0
-      printf "\n\n"
-      printf json['data']
-      printf "\n\n"
-      printf "The merchant is either not set up for Epson yet,\n"
-      printf "or already has an associated printer.\n"
-      printf "Try another merchant!"
-      printf "\n\n\n"
+  # --- Step: IP ------------
+  def step_ip
+    @ip = prompt_ip
+    :merchant
+  end
 
-      return false
+
+  # --- Step: Merchant ------------
+  def step_merchant
+    valid = false
+    until valid
+      merchant_id = prompt_merchant
+      valid = verify_merchant(@mode, merchant_id)
     end
 
+    choice = prompt("Is this correct?", ['yes', 'no'])
 
-    # Success!  Display merchant info
-    printf "\n\n"
-    printf "Selected merchant:"
-    printf "\n  ID:       " + json['data']['id'].to_s
-    printf "\n  Name:     " + json['data']['merchant_name'].to_s
-    printf "\n  Location: " + json['data']['location'].to_s
-    printf "\n\n"
-
-    printf "This is a "
-    printf (json['data']['valid'] == false ? "in" : "")
-    printf "valid merchant!\n\n\n"
-
-    return true
+    # Incorrect? repeat this step.
+    return :merchant  if choice == 'no'
 
 
-  rescue RestClient::Exception => e
-    printf "\n"
-    printf "An error occured:  " + e.message
-    printf "\n\n\n"
-    return false
+    @merchant_id = merchant_id
+    :autoconfigure
   end
 
 
-  def self.prompt_mode
-    prompt("Are you configuring for QA or Production?", ['qa', 'production'], 'production')
+  # --- Step: Autoconfigure ------------
+  def step_autoconfigure
+    printf "Alright, let's configure the printer!\n\n"
+
+    password = prompt_password
+
+    autoconfigure(@mode, @merchant_id, @ip, password)
+
+    printf "\n\n"
+
+    # Cleanup
+    @ip = @merchant_id = nil
+
+    choice = prompt("Configure another?", ['yes', 'no'], 'yes')
+    return :model  if choice == 'yes'
+    return :done   if choice == 'no'
   end
 
 
-  #TODO: autodetermine this from the api responses
-  def self.prompt_model
+  # --- Step: Done ------------
+  def step_done
+    printf "\n\n"
+    printf "Goodbye!\n\n"
+    Kernel::exit()
+  end
+
+
+
+
+  # ============ Prompts ============ #
+
+
+
+  # --- Prompt: Mode ------------
+  def prompt_mode
+    mode = prompt("Are you configuring for QA or Production?", ['qa', 'production'], 'qa')
+
+    # Just to be clear.
+    return :QA          if mode == "qa"
+    return :PRODUCTION  if mode == "production"
+  end
+
+
+  # --- Prompt: Model ------------
+  def prompt_model
+    #TODO: auto determine this from the api responses
+
+    # This text uses "type" instead of "model" since the referenced label makes it confusing.
     printf "Which type of printer are you configuring?\n"
     printf "This number begins with TM-T88__ and is printed on the label on the\n"
     printf "right side of the printer, immediately beside \"EPSON\".\n"
@@ -216,8 +202,12 @@ module Menu
   end
 
 
-  def self.prompt_ip
-    printf "You can find the Printer's IP on its initial printout.\n"
+  # --- Prompt: IP ------------
+  def prompt_ip
+    printf "What's the IP of the printer are you configuring?\n"
+    printf "You can find it on the initial printout. It looks like this:\n"
+    printf "    IP: x.x.x.x\n"
+    printf "\n"
 
     while true  # meh
       ip = prompt("Printer's IP:")
@@ -228,7 +218,8 @@ module Menu
   end
 
 
-  def self.prompt_merchant
+  # --- Prompt: Merchant ------------
+  def prompt_merchant
     printf "Please enter the Merchant's ID from Admin Tools.\n"
 
     while true  # meh
@@ -240,26 +231,79 @@ module Menu
   end
 
 
-
-  def self.prompt_password
+  # --- Prompt: Password ------------
+  def prompt_password
     prompt("If the printer has a custom password, enter it here:", nil, 'epson')
   end
 
 
-  def self.valid_merchant_id?(id)
+
+
+  # ============ Validation ============ #
+
+
+
+  # --- (User) Validation: Merchant data ------------
+  def verify_merchant(mode, id)
+    url  = admt_api_url(mode, :validate)
+
+    json = JSON.parse RestClient.post(url, {
+      data: {
+        token: @TOKEN[mode],
+        merchant_id: id
+      }
+    })
+
+    # Failure response
+    if json['status'] == 0
+      printf "\n\n"
+      printf json['data']
+      printf "\n\n"
+      printf "The merchant is either not set up for Epson yet,\n"
+      printf "or already has an associated printer.\n"
+      printf "Try another merchant!"
+      printf "\n\n\n"
+
+      return false
+    end
+
+    # Success!  Display merchant info
+    printf "\n\n"
+    printf "Selected merchant:"
+    printf "\n  ID:       " + json['data']['id'].to_s
+    printf "\n  Name:     " + json['data']['merchant_name'].to_s
+    printf "\n  Location: " + json['data']['location'].to_s
+    printf "\n\n"
+
+    printf "This is a "
+    printf (json['data']['valid'] == false ? "in" : "")
+    printf "valid merchant!\n\n\n"
+    return true
+
+  rescue RestClient::Exception => e
+    printf "\n"
+    printf "An error occured:  " + e.message
+    printf "\n\n\n"
+    return false
+  end
+
+
+  # --- Validation: Merchant ID ------------
+  def valid_merchant_id?(id)
     # Only handles strings
-    return false if id.nil?
-    return false if (id =~ /^[0-9]+@/).nil?  # Contains non-digits
-    return false if id.to_i == 0
+    return false  if id.nil?
+    return false  if (id =~ /^[0-9]+$/).nil?  # Contains non-digits
+    return false  if id.to_i == 0
     true
   end
 
 
-  def self.valid_ip?(ip)
+  # --- Validation: IP ------------
+  def valid_ip?(ip)
     # Presence
     return false  if     ip.nil?
     return false  if     ip.empty?
-    return false  unless ip.is_a? String  # anal =p
+    return false  unless ip.is_a? String  # being anal =p
 
     # Octet count
     octets = ip.split(".")
@@ -276,12 +320,12 @@ module Menu
   end
 
 
-  # ------------ Printer Configuration ------------ #
+
+  # ============ Printer Configuration ============ #
 
 
   # Took enough to get here, eh?
-  def self.autoconfigure(mode, id, ip, password)
-    mode   = normalize_mode(mode)
+  def autoconfigure(mode, id, ip, password)
     config = get_merchant_info(mode, id)  # Fetch the printer config from the server.
 
     if config.nil?
@@ -315,9 +359,13 @@ module Menu
   end
 
 
-  # ------------ API ------------ #
 
-  def self.admt_api_url(mode, endpoint)
+
+  # ============ API ============ #
+
+
+
+  def admt_api_url(mode, endpoint)
     unless [:config, :validate, :test].include? endpoint
       raise ArgumentError, "Invalid endpoint #{endpoint} passed to admt_api_url()"
     end
@@ -335,44 +383,8 @@ module Menu
   end
 
 
-  # def self.send_test_redemption(mode, id)
-  #   mode = normalize_mode(mode)
-  #   url  = admt_api_url(mode, :test)
-  #
-  #   printf "Sending a test redemption...\n"
-  #   response = JSON.parse RestClient.post(url, {
-  #     data: {
-  #       token: TOKEN[mode],
-  #       merchant_id: id
-  #     }
-  #   })
-  #
-  #   # Failure response
-  #   if response['status'] == 0
-  #     printf "\n\n"
-  #     printf "Something went wrong.\n"
-  #     printf "Here's the details:\n"
-  #     pp json
-  #     printf "\n\n"
-  #
-  #     return
-  #   end
-  #
-  #   # Success!
-  #   printf "Success!\n\n\n"
-  #
-  # rescue => e
-  #   printf "\n\n"
-  #   printf "Something went wrong:\n"
-  #   printf "Here's the details:\n"
-  #   printf e.message
-  #   printf "\n\n"
-  # end
 
-
-
-  def self.get_merchant_info(mode, id)
-    mode = normalize_mode(mode)
+  def get_merchant_info(mode, id)
     url  = admt_api_url(mode, :config)
 
     response = RestClient.post(url, {
@@ -431,11 +443,21 @@ end
 
 
 # Alright, let's run this thing!
-# Menu.start
+# Menu.new.start
 
 
-@printer = Epson.new(:T88VI, "10.0.0.95")
-# @printer.set_password 'epson'
-@printer.set_sdp      "http://test-sdp.itson.me",     60, "cl_test_id", "autoconfigure_qa_printer"
-# @printer.set_status   "http://test-status.itson.me", 240, "cl_test_id", "autoconfigure_qa_printer"
+
+
+
+# For debugging
+
+def start
+  Menu.new.start
+end
+
+
+$printer = Epson.new(:T88VI, "10.0.0.95")
+# $printer.set_password 'epson'
+$printer.set_sdp      "http://test-sdp.itson.me",     60, "cl_test_id", "autoconfigure_qa_printer"
+# $printer.set_status   "http://test-status.itson.me", 240, "cl_test_id", "autoconfigure_qa_printer"
 
