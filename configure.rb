@@ -145,14 +145,13 @@ class Menu
     printf "Alright, let's configure the printer!\n\n"
 
     password = prompt_password
+    autoconfigure(@mode, @merchant_id, @model, @ip, password)
 
-    autoconfigure(@mode, @merchant_id, @ip, password)
-
-    printf "\n\n"
 
     # Cleanup
-    @ip = @merchant_id = nil
+    @model = @ip = @merchant_id = nil
 
+    printf "\n\n"
     choice = prompt("Configure another?", ['yes', 'no'], 'yes')
     return :model  if choice == 'yes'
     return :done   if choice == 'no'
@@ -325,7 +324,7 @@ class Menu
 
 
   # Took enough to get here, eh?
-  def autoconfigure(mode, id, ip, password)
+  def autoconfigure(mode, id, model, ip, password)
     config = get_merchant_info(mode, id)  # Fetch the printer config from the server.
 
     if config.nil?
@@ -335,7 +334,7 @@ class Menu
     end
 
     printf "Autoconfiguring!\n"
-    printer = Epson.new(@model, ip, password)
+    printer = Epson.new(model, ip, password)
 
     # Set up the data
     printer.set_sdp           config[:sdp_url],    config[:sdp_interval]
@@ -407,16 +406,16 @@ class Menu
 
     # Success!
     data = {
-      id:              json['data']['id'],               # @client.application_key,
-      password:        json['data']['password'],         # @client.password,
-      administrator:   json['data']['administrator'],    # SERVICE_NAME,
-      location:        json['data']['location'],         # @client.location_slug,
-      printer_name:    json['data']['printer_name'],     # @client.url_name,
-      sdp_url:         json['data']['sdp_url'],          # "https://#{qa}printer.itson.me/events/callbacks/epson_check",
-      sdp_interval:    json['data']['sdp_interval'],     # 15,
-      status_url:      json['data']['status_url'],       # "https://#{qa}printer.itson.me/events/callbacks/epson_status",
-      status_interval: json['data']['status_interval'],  # 240,
-      merchant_name:   json['data']['merchant_name']     # @client_partner_name
+      id:              json['data']['id']
+      password:        json['data']['password']
+      administrator:   json['data']['administrator']
+      location:        json['data']['location']
+      printer_name:    json['data']['printer_name']
+      sdp_url:         json['data']['sdp_url']
+      sdp_interval:    json['data']['sdp_interval']
+      status_url:      json['data']['status_url']
+      status_interval: json['data']['status_interval']
+      merchant_name:   json['data']['merchant_name']
     }
 
     # May as well display this.
