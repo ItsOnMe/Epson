@@ -370,16 +370,14 @@ class Menu
       raise ArgumentError, "Invalid endpoint #{endpoint} passed to admt_api_url()"
     end
 
-    url  = "https://"
-    url += "qa"                    if mode == :QA
-    url += "admin.itson.me/admt/envs/"
+    qa = (mode==:QA ? "qa" : "")
 
-    url += "config_epson"          if endpoint == :config
-    url += "validate_merchant"     if endpoint == :validate
-    url += "send_test"             if endpoint == :test
+    api = ""
+    api = "config_epson"       if endpoint == :config
+    api = "validate_merchant"  if endpoint == :validate
+    api = "send_test"          if endpoint == :test
 
-    url += "?format=json"
-    url
+    "https://#{qa}admin.itson.me/admt/envs/#{api}?format=json"
   end
 
 
