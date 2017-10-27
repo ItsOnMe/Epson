@@ -406,16 +406,16 @@ class Menu
 
     # Success!
     data = {
-      id:              json['data']['id']
-      password:        json['data']['password']
-      administrator:   json['data']['administrator']
-      location:        json['data']['location']
-      printer_name:    json['data']['printer_name']
-      sdp_url:         json['data']['sdp_url']
-      sdp_interval:    json['data']['sdp_interval']
-      status_url:      json['data']['status_url']
-      status_interval: json['data']['status_interval']
-      merchant_name:   json['data']['merchant_name']
+      id:              json['data']['id'],
+      password:        json['data']['password'],
+      administrator:   json['data']['administrator'],
+      location:        json['data']['location'],
+      printer_name:    json['data']['printer_name'],
+      sdp_url:         json['data']['sdp_url'],
+      sdp_interval:    json['data']['sdp_interval'],
+      status_url:      json['data']['status_url'],
+      status_interval: json['data']['status_interval'],
+      merchant_name:   json['data']['merchant_name'],
     }
 
     # May as well display this.
