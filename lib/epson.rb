@@ -191,7 +191,7 @@ class Epson
     if @config[:sdp]
       settings["ServerDirectPrint"]["Active"]    = "ON",
       settings["ServerDirectPrint"]["Url1"]      = @config[:sdp][:url]
-      settings["ServerDirectPrint"]["Internal1"] = @config[:sdp][:interval]
+      settings["ServerDirectPrint"]["Interval1"] = @config[:sdp][:interval]
       settings["ServerDirectPrint"]["ID"]        = @config[:sdp][:id]
       settings["ServerDirectPrint"]["Name"]      = @config[:sdp][:name]
       # Other ostensibly-required values:
@@ -204,7 +204,7 @@ class Epson
     if @config[:status]
       settings["StatusNotification"]["Active"]    = "ON"
       settings["StatusNotification"]["Url1"]      = @config[:status][:url]
-      settings["StatusNotification"]["Internal1"] = @config[:status][:interval]
+      settings["StatusNotification"]["Interval1"] = @config[:status][:interval]
       settings["StatusNotification"]["ID"]        = @config[:status][:id]
       settings["StatusNotification"]["Name"]      = @config[:status][:name]
     end
