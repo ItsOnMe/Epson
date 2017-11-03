@@ -44,8 +44,8 @@ class Epson
   def set_sdp(url, interval, id, name)
     @config[:sdp] = {
       url: url,
-      interval: interval,
-      id: id,
+      interval: interval.to_s,
+      id: id.to_s,
       name: name
     }
   end
@@ -53,8 +53,8 @@ class Epson
   def set_status(url, interval, id, name)
     @config[:status] = {
       url: url,
-      interval: interval,
-      id: id,
+      interval: interval.to_s,
+      id: id.to_s,
       name: name
     }
   end
