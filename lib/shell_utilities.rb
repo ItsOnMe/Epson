@@ -1,3 +1,7 @@
+# Basic shell I/O methods
+
+#TODO: Add color helpers for *nix platforms
+
 
 # Should be pretty cross-platform
 def clear_screen
@@ -7,10 +11,14 @@ end
 
 # Prompt the user for input, optionally with choices and a default.
 def prompt(text, choices=[], default=nil)
-  # Prompt text
-  #   or:
-  # Prompt text  [choices, list, here]  (default: value)
-  # >
+  # Prompt text 
+  #  -- or: --
+  # Prompt text  (default: value)
+  # > 
+  #  -- or: --
+  # Prompt text  (default: value)
+  # Choices: [list, shown, here]
+  # > 
 
   has_choices = choices.present?
   has_default = default.present?
@@ -51,4 +59,3 @@ def prompt(text, choices=[], default=nil)
 
   choice
 end
-

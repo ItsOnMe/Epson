@@ -1,5 +1,5 @@
-
 # Actual Epson class
+
 class Epson
   attr_accessor :model, :ip, :password
   attr_reader   :config
