@@ -18,6 +18,7 @@
 
   - Loading the script: `irb -r ./configure.rb`
   - Starting the menu:  `start`
-  - Printer configuration test:  `$printer.apply!`
+  - Printer configuration test:  `$printervi.apply!`
+  - Printer configuration test:  `$printerv.apply!`
 
-(`$printer` is an Epson object pre-loaded with test configuration data.  Its IP is hardcoded to `10.0.0.95`)
+(`$printer*` are  Epson objects pre-loaded with test configuration data.  The IPs are hardcoded to `10.0.0.95` and `.91`)
