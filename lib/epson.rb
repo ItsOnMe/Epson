@@ -44,7 +44,7 @@ class Epson
   def set_sdp(url, interval, id, name)
     @config[:sdp] = {
       url: url,
-      interval: interval.to_s,
+      interval: interval.to_s,  # Printer wants a string, not a number
       id: id.to_s,
       name: name
     }
@@ -53,7 +53,7 @@ class Epson
   def set_status(url, interval, id, name)
     @config[:status] = {
       url: url,
-      interval: interval.to_s,
+      interval: interval.to_s,  # Printer wants a string, not a number
       id: id.to_s,
       name: name
     }
@@ -91,22 +91,16 @@ class Epson
     data     = { Setting: Hash.new }
     settings = data[:Setting]  # Shortcut
 
-    # Construct JSON
-    if @config[:NewPassword]
-      settings[:Password] = @config[:NewPassword]
-      ##debug:
-      settings[:Password] = "epson"
-    end
-
-    # The T88VI does not accept Administrator information.
+    # ------ Construct JSON ------
     if @config[:administrator]
+      # The T88VI does not accept Administrator information.
       settings[:Administrator] = @config[:administrator].extract(:Administrator, :Location)
     end
 
     if @config[:sdp]
       settings[:ServerDirectPrint] = {
         Active:    "ON",
-        Url1:      @config[:sdp][:url],
+        Url1:      @config[:sdp][:url],          # Set the first of three URLs and Intervals
         Interval1: @config[:sdp][:interval],
         ID:        @config[:sdp][:id],
         Name:      @config[:sdp][:name],
@@ -116,8 +110,8 @@ class Epson
     if @config[:status]
       settings[:StatusNotification] = {
         Active:    "ON",
-        Url1:      @config[:status][:url],
-        Interval1: @config[:status][:interval],
+        Url:       @config[:status][:url],       # There's only a single URL and Interval
+        Interval:  @config[:status][:interval],
         ID:        @config[:status][:id],
         Name:      @config[:status][:name]
       }
@@ -129,40 +123,122 @@ class Epson
     end
 
 
-    # Construct API request
+    # ------ Construct and send API request ------
     url = @T88VI_API_URL
     url = url_add_put_data(url, data)
 
-    # Request it!
     $response = curl(url, :put)
 
     # Parse result
     json = JSON.parse($response)
     successful = json["message"].start_with?("Success")
 
-    log "result:"
-    pp  json
-    log ""
+
+    if not successful
+      log "Oh no!  Failed to update printer."
+      log
+      log "result:"
+      pp  json
+      log
+
+      return false
+    end
 
 
-    return false  if not successful
+    log
+    log "Configured!  Verifying..."
+    printer_config = self.get_config["Setting"]
 
 
-    # Use new password
-    # @password = @config[:NewPassword]
+    # ------ Verify config ------
 
-    log ""
-    log "Re-fetching config..."
-    config = self.get_config
+    issues = []
+    if @config[:sdp].present?
+      issues.push "ServerDirectPrint -- Active"     if printer_config["ServerDirectPrint"]["Active"]    != "ON"
+      issues.push "ServerDirectPrint -- Url1"       if printer_config["ServerDirectPrint"]["Url1"]      != @config[:sdp][:url]
+      issues.push "ServerDirectPrint -- Interval1"  if printer_config["ServerDirectPrint"]["Interval1"] != @config[:sdp][:interval]
+      issues.push "ServerDirectPrint -- ID"         if printer_config["ServerDirectPrint"]["ID"]        != @config[:sdp][:id]
+      issues.push "ServerDirectPrint -- Name"       if printer_config["ServerDirectPrint"]["Name"]      != @config[:sdp][:name]
+    end
+    if @config[:status].present?
+      issues.push "StatusNotification -- Active"    if printer_config["StatusNotification"]["Active"]   != "ON"
+      issues.push "StatusNotification -- Url"       if printer_config["StatusNotification"]["Url"]      != @config[:status][:url]
+      issues.push "StatusNotification -- Interval"  if printer_config["StatusNotification"]["Interval"] != @config[:status][:interval]
+      issues.push "StatusNotification -- ID"        if printer_config["StatusNotification"]["ID"]       != @config[:status][:id]
+      issues.push "StatusNotification -- Name"      if printer_config["StatusNotification"]["Name"]     != @config[:status][:name]
+    end
 
-    pp config
+
+    if issues.present?
+      log "Oh no!  There was an issue autoconfiguring the printer."
+      log "Here are the values that failed to set correctly:"
+      issues.each do |issue|
+        log " > #{issue}"
+      end
+
+      log
+      log "(Note: printer password remains unchanged)"
+      log
+      return false
+    end
 
 
-    # curl --digest --insecure -u epson:epson -X PUT https://10.0.0.95/webconfig/api/v1/webconfig.cgi -d "{\"Setting\":{\"ServerDirectPrint\":{\"Active\":\"OFF\"}}}"
+    ## For debugging.  In production, we will always update the password.
+    if not @config[:NewPassword].present?
+      log "Success!  Restarting..."
+      return self.reset!
+    end
 
-    # return self.reset!
 
-    return true
+    # ------ Update Password ------
+    log "Setting password ..."
+
+    data = {
+      Setting: {
+        NewPassword: @config[:NewPassword]
+      }
+    }
+
+    # Construct and send API request
+    url = @T88VI_API_URL
+    url = url_add_put_data(url, data)
+
+    $response = curl(url, :put)
+
+    # Parse result
+    json = JSON.parse($response)
+    successful = json["message"].start_with?("Success")
+
+
+    ##TODO: dry
+    if not successful
+      log "Oh no!  Error setting password"
+      log "Please check the printer's configuration via its webconfig:"
+      log "    Open your browser and visit: http://#{@ip}/"
+      log
+      Kernel::exit()
+    end
+
+    log "Success!"
+    log
+    log "Restarting printer..."
+
+    successful = self.reset!
+
+
+    ##TODO: dry
+    if not successful
+      log "Oh no!  Unable to restart the printer!"
+      log "Please check the printer's configuration via its webconfig:"
+      log "    Open your browser and visit: http://#{@ip}/"
+      log
+      Kernel::exit()
+    end
+
+    # New settings are only applid after a restart, including the password
+    @password = @config[:NewPassword]
+
+    return successful
   end
 
 
@@ -374,7 +450,7 @@ class Epson
   def curl(url, type=:get)
     type = "-X #{type.upcase.to_s}"
     command = "curl --silent --digest --insecure -u #{@username}:#{@password} #{type} #{url}"
-    log "cURL command: #{command}"
+    # log "cURL command: #{command}"
 
     # Handle the printer arbitrarily terminating connections.
     result = ""
@@ -394,15 +470,7 @@ class Epson
 
   def get_model
     #TODO: autodetermine model from api
-    return @model
-  end
-
-  # Internal validation
-  def assert_presence(hash)
-    ##! Disallows blank values
-    hash.each do |k,v|
-      raise ArgumentError, "#{k} must not be blank!"  unless v.present?
-    end
+    return @model.to_sym
   end
 
 end

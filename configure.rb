@@ -337,11 +337,16 @@ class Menu
     printer = Epson.new(model, ip, password)
 
     # Set up the data
-    printer.set_sdp           config[:sdp_url],    config[:sdp_interval]
-    printer.set_status        config[:status_url], config[:status_interval], config[:id], config[:printer_name]
-    printer.set_password      config[:password]
-    printer.set_administrator config[:administrator], config[:location]
+    printf(" | Server Direct Print...\n")
+    printer.set_sdp(           config[:sdp_url],    config[:sdp_interval],    config[:id], config[:printer_name])
+    printf(" | Status Notification ...\n")
+    printer.set_status(        config[:status_url], config[:status_interval], config[:id], config[:printer_name])
+    printf(" | Administrator ...\n")
+    printer.set_administrator( config[:administrator], config[:location])
+    printf(" | Password ...\n")
+    printer.set_password(      config[:password])
     # and send it to the printer!
+    printf(" | Applying settings ...\n")
     printer.apply!
 
     printf "Done!\n"
@@ -386,7 +391,7 @@ class Menu
 
     response = RestClient.post(url, {
       data: {
-        token: TOKEN[mode],
+        token: @TOKEN[mode],
         merchant_id: id
       }
     })
@@ -453,8 +458,16 @@ def start
 end
 
 
-$printer = Epson.new(:T88VI, "10.0.0.95")
+
+$printervi = Epson.new(:T88VI, "10.0.0.95")
 # $printer.set_password 'epson'
-$printer.set_sdp      "http://test-sdp.itson.me",     60, "cl_test_id", "autoconfigure_qa_printer"
-# $printer.set_status   "http://test-status.itson.me", 240, "cl_test_id", "autoconfigure_qa_printer"
+$printervi.set_sdp      "http://test-sdp.itson.me",     60, "cl_test_id--6", "autoconfigure_qa_printer--6"
+# $printer.set_status   "http://test-status.itson.me", 240, "cl_test_id--6", "autoconfigure_qa_printer--6"
+
+
+
+$printerv = Epson.new(:T88VI, "10.0.0.91")
+# $printer.set_password 'epson'
+$printerv.set_sdp      "http://test-sdp.itson.me",     60, "cl_test_id-5", "autoconfigure_qa_printer--5"
+# $printer.set_status   "http://test-status.itson.me", 240, "cl_test_id--5", "autoconfigure_qa_printer--5"
 
