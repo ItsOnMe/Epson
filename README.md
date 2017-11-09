@@ -14,8 +14,9 @@
 ------
 
 
-### Debugging Usage:
+### Debugging:
 
+  - Remove the `__END__` line in `configure.rb`
   - Loading the script: `irb -r ./configure.rb`
   - Starting the menu:  `start`
   - Printer configuration test:  `$printervi.apply!`
