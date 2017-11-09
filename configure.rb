@@ -339,14 +339,14 @@ class Menu
     # Set up the data
     printf(" | Server Direct Print...\n")
     printer.set_sdp(           config[:sdp_url],    config[:sdp_interval],    config[:id], config[:printer_name])
-    printf(" | Status Notification ...\n")
+    printf(" | Status Notification...\n")
     printer.set_status(        config[:status_url], config[:status_interval], config[:id], config[:printer_name])
-    printf(" | Administrator ...\n")
+    printf(" | Administrator...\n")
     printer.set_administrator( config[:administrator], config[:location])
-    printf(" | Password ...\n")
+    printf(" | Password...\n")
     printer.set_password(      config[:password])
     # and send it to the printer!
-    printf(" | Applying settings ...\n")
+    printf(" | Applying settings...\n")
     printer.apply!
 
     printf "Done!\n"
@@ -445,11 +445,13 @@ end
 
 
 # Alright, let's run this thing!
-# Menu.new.start
+Menu.new.start
 
 
 
 
+
+__END__
 
 # For debugging
 
@@ -470,4 +472,3 @@ $printerv = Epson.new(:T88VI, "10.0.0.91")
 # $printer.set_password 'epson'
 $printerv.set_sdp      "http://test-sdp.itson.me",     60, "cl_test_id-5", "autoconfigure_qa_printer--5"
 # $printer.set_status   "http://test-status.itson.me", 240, "cl_test_id--5", "autoconfigure_qa_printer--5"
-

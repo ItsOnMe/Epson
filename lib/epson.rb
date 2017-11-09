@@ -191,7 +191,7 @@ class Epson
 
 
     # ------ Update Password ------
-    log "Setting password ..."
+    log "Setting password..."
 
     data = {
       Setting: {
