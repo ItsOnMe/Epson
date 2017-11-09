@@ -167,7 +167,7 @@ class Menu
 
   # --- Prompt: Mode ------------
   def prompt_mode
-    mode = prompt("Are you configuring for QA or Production?", ['qa', 'production'], 'qa')
+    mode = prompt("Are you configuring for QA or Production?", ['qa', 'production'], 'production')
 
     # Just to be clear.
     return :QA          if mode == "qa"
