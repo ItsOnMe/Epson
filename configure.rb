@@ -29,7 +29,7 @@ class Menu
     # Initial step
     step = :mode
 
-    while step != :done
+    while true
       clear_screen
       display_menu
 
@@ -46,8 +46,6 @@ class Menu
         step_merchant
       when :autoconfigure
         step_autoconfigure
-      when :done
-        step_done
       end
 
     end
@@ -129,7 +127,7 @@ class Menu
       valid = verify_merchant(@mode, merchant_id)
     end
 
-    choice = prompt("Is this correct?", ['yes', 'no'])
+    choice = prompt("Is this correct?", ['y', 'n'])
 
     # Incorrect? repeat this step.
     return :merchant  if choice == 'no'
@@ -144,9 +142,7 @@ class Menu
   def step_autoconfigure
     printf "Alright, let's configure the printer!\n\n"
 
-    password = prompt_password
-    autoconfigure(@mode, @merchant_id, @model, @ip, password)
-
+    autoconfigure(@mode, @merchant_id, @model, @ip)
 
     # Cleanup
     @model = @ip = @merchant_id = nil
@@ -154,17 +150,14 @@ class Menu
     printf "\n\n"
     choice = prompt("Configure another?", ['yes', 'no'], 'yes')
     return :model  if choice == 'yes'
-    return :done   if choice == 'no'
-  end
 
 
-  # --- Step: Done ------------
-  def step_done
+    # --- Done! ------
+
     printf "\n\n"
     printf "Goodbye!\n\n"
     Kernel::exit()
   end
-
 
 
 
@@ -231,8 +224,8 @@ class Menu
 
 
   # --- Prompt: Password ------------
-  def prompt_password
-    prompt("If the printer has a custom password, enter it here:", nil, 'epson')
+  def prompt_password(password='epson')
+    prompt("If the printer has a custom password, enter it here:", nil, password)
   end
 
 
@@ -260,6 +253,7 @@ class Menu
       printf "\n\n"
       printf "The merchant is either not set up for Epson yet,\n"
       printf "or already has an associated printer.\n"
+      printf "\n"
       printf "Try another merchant!"
       printf "\n\n\n"
 
@@ -268,15 +262,11 @@ class Menu
 
     # Success!  Display merchant info
     printf "\n\n"
-    printf "Selected merchant:"
-    printf "\n  ID:       " + json['data']['id'].to_s
+    printf "Selected merchant #{json['data']['id']}:"
     printf "\n  Name:     " + json['data']['merchant_name'].to_s
     printf "\n  Location: " + json['data']['location'].to_s
-    printf "\n\n"
+    printf "\n\n\n"
 
-    printf "This is a "
-    printf (json['data']['valid'] == false ? "in" : "")
-    printf "valid merchant!\n\n\n"
     return true
 
   rescue RestClient::Exception => e
@@ -324,7 +314,7 @@ class Menu
 
 
   # Took enough to get here, eh?
-  def autoconfigure(mode, id, model, ip, password)
+  def autoconfigure(mode, id, model, ip)
     config = get_merchant_info(mode, id)  # Fetch the printer config from the server.
 
     if config.nil?
@@ -333,6 +323,10 @@ class Menu
       return
     end
 
+    # Ask if the printer has a custom password, and default to the fetched password
+    password = prompt_password(config[:password])
+
+    printf "\n"
     printf "Autoconfiguring!\n"
     printer = Epson.new(model, ip, password)
 
@@ -343,8 +337,9 @@ class Menu
     printer.set_status(        config[:status_url], config[:status_interval], config[:id], config[:printer_name])
     printf(" | Administrator...\n")
     printer.set_administrator( config[:administrator], config[:location])
-    printf(" | Password...\n")
-    printer.set_password(      config[:password])
+    # printf(" | Password...\n")
+    # printer.set_password(      config[:password])
+
     # and send it to the printer!
     printf(" | Applying settings...\n")
     printer.apply!
@@ -387,6 +382,8 @@ class Menu
 
 
   def get_merchant_info(mode, id)
+    printf "Fetching configuration from the server..."
+
     url  = admt_api_url(mode, :config)
 
     response = RestClient.post(url, {
@@ -424,8 +421,8 @@ class Menu
     }
 
     # May as well display this.
-    printf "\n\n"
-    printf "Recieved the configuration from the server:\n\n"
+    printf "\n"
+    printf "Done!\n\n"
     pp data
     printf "\n\n"
 

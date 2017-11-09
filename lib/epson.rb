@@ -145,8 +145,9 @@ class Epson
     end
 
 
+    log "Configured!"
     log
-    log "Configured!  Verifying..."
+    log "Verifying..."
     printer_config = self.get_config["Setting"]
 
 
@@ -176,8 +177,9 @@ class Epson
         log " > #{issue}"
       end
 
-      log
-      log "(Note: printer password remains unchanged)"
+      ##+ Cannot update password via API yet
+      # log
+      # log "(Note: printer password remains unchanged)"
       log
       return false
     end
@@ -185,39 +187,42 @@ class Epson
 
     ## For debugging.  In production, we will always update the password.
     if not @config[:NewPassword].present?
-      log "Success!  Restarting..."
+      log "Success!"
+      log
+      log "Restarting printer..."
       return self.reset!
     end
 
 
+    ##+ Cannot update password via API yet
     # ------ Update Password ------
-    log "Setting password..."
+    # log "Setting password..."
 
-    data = {
-      Setting: {
-        NewPassword: @config[:NewPassword]
-      }
-    }
+    # data = {
+    #   Setting: {
+    #     NewPassword: @config[:NewPassword]
+    #   }
+    # }
 
-    # Construct and send API request
-    url = @T88VI_API_URL
-    url = url_add_put_data(url, data)
+    # # Construct and send API request
+    # url = @T88VI_API_URL
+    # url = url_add_put_data(url, data)
 
-    $response = curl(url, :put)
+    # $response = curl(url, :put)
 
-    # Parse result
-    json = JSON.parse($response)
-    successful = json["message"].start_with?("Success")
+    # # Parse result
+    # json = JSON.parse($response)
+    # successful = json["message"].start_with?("Success")
 
 
-    ##TODO: dry
-    if not successful
-      log "Oh no!  Error setting password"
-      log "Please check the printer's configuration via its webconfig:"
-      log "    Open your browser and visit: http://#{@ip}/"
-      log
-      Kernel::exit()
-    end
+    # ##TODO: dry
+    # if not successful
+    #   log "Oh no!  Error setting password"
+    #   log "Please check the printer's configuration via its webconfig:"
+    #   log "    Open your browser and visit: http://#{@ip}/"
+    #   log
+    #   Kernel::exit()
+    # end
 
     log "Success!"
     log
@@ -229,14 +234,15 @@ class Epson
     ##TODO: dry
     if not successful
       log "Oh no!  Unable to restart the printer!"
-      log "Please check the printer's configuration via its webconfig:"
+      log "Please restart it manually, and check the configuration via its webconfig:"
       log "    Open your browser and visit: http://#{@ip}/"
       log
       Kernel::exit()
     end
 
-    # New settings are only applid after a restart, including the password
-    @password = @config[:NewPassword]
+    ##+ Cannot update password via API yet
+    # New settings are only applied after a restart
+    # @password = @config[:NewPassword]
 
     return successful
   end

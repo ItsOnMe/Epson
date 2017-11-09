@@ -23,11 +23,12 @@ def prompt(text, choices=[], default=nil)
 
 
   printf prompt_text
-  if (has_choices || has_default)
+  if (has_choices)
     printf "\n"
     printf choice_text
-    printf "\n>"
   end
+
+  printf "\n>"  if (has_choices || has_default)
   printf " "
 
 
