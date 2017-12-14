@@ -364,7 +364,8 @@ class Menu
     end
 
 
-    printf "\n"
+    clear_screen
+    display_menu
     printf "Autoconfiguring!\n"
 
     # Set up the data
