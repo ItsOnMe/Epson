@@ -149,7 +149,7 @@ class Menu
 
     printf "\n\n"
     choice = prompt("Configure another?", ['yes', 'no'], 'yes')
-    return :model  if choice == 'yes'
+    return :merchant  if choice == 'yes'
 
 
     # --- Done! ------
