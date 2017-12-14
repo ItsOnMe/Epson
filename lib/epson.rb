@@ -1,8 +1,8 @@
 # Actual Epson class
 
 class Epson
-  attr_accessor :model, :ip, :password
-  attr_reader   :config
+  attr_accessor :model, :password
+  attr_reader   :config, :ip
 
   class ConnectionError < IOError; end
 
@@ -24,6 +24,12 @@ class Epson
       status_notification:  "status_notification.cgi",
       password:             "password.cgi",
     }
+  end
+
+  def ip= ip
+    @ip = ip
+    @T88VI_API_URL   = "https://#{ip}/webconfig/api/v1/webconfig.cgi"
+    @T88VI_RESET_URL = "https://#{ip}/webconfig/api/v1/reset.cgi"
   end
 
 
