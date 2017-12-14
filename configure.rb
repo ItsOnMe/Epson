@@ -348,7 +348,10 @@ class Menu
       # Tell the user to configure the printer's password
       prompt_configure_password(ip, password)
 
+      printf "Testing printer connection..."
       success = printer.test_connection
+      printf "\n"
+
       unless success
         # Display menu again
         clear_screen
