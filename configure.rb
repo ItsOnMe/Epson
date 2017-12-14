@@ -224,8 +224,23 @@ class Menu
 
 
   # --- Prompt: Password ------------
-  def prompt_password(password='epson')
-    prompt("If the printer has a custom password, enter it here:", nil, password)
+  def prompt_configure_password(ip, password)
+    printf "First, log into the printer.\n"
+    printf "Open your browser and go here:\n"
+    printf "    http://#{ip}\n"
+    printf "Here are the login credentials:\n"
+    printf "    username: epson\n"
+    printf "    password: epson\n"
+    printf "\n"
+    printf "After logging in, click the [Password] link at the very bottom of the sidebar.\n"
+    printf "Here are the details:\n"
+    printf "    old password: epson\n"
+    printf "    new password: #{password}\n"
+    printf "\n"
+    printf "\n"
+    printf "------------\n"
+
+    prompt("Press enter when you're finished! ")
   end
 
 
@@ -323,12 +338,31 @@ class Menu
       return
     end
 
-    # Ask if the printer has a custom password, and default to the fetched password
-    password = prompt_password(config[:password])
+    password = config[:password]
+    printer  = Epson.new(model, ip, password)
+
+
+    # Loop until the user has completed their task successfully
+    success = false
+    until success
+      # Tell the user to configure the printer's password
+      prompt_configure_password(ip, password)
+
+      success = printer.test_connection
+      unless success
+        # Display menu again
+        clear_screen
+        display_menu
+        # Display error message
+        printf "Error: Unable to connect to the printer.\n"
+        printf "       Please set the password again!\n"
+        printf "\n\n"
+      end
+    end
+
 
     printf "\n"
     printf "Autoconfiguring!\n"
-    printer = Epson.new(model, ip, password)
 
     # Set up the data
     printf(" | Server Direct Print...\n")

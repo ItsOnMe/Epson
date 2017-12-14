@@ -4,6 +4,9 @@ class Epson
   attr_accessor :model, :ip, :password
   attr_reader   :config
 
+  class ConnectionError < IOError; end
+
+
   def initialize(model, ip, password='epson')
     @model    = model || :T88VI
     @ip       = ip
@@ -21,6 +24,13 @@ class Epson
       status_notification:  "status_notification.cgi",
       password:             "password.cgi",
     }
+  end
+
+
+  def test_connection
+    return test_connection_T88V  if get_model() == :T88V
+    return test_connection_T88VI if get_model() == :T88VI
+    raise RuntimeError, "Incorrect printer model"
   end
 
 
@@ -84,6 +94,24 @@ class Epson
 
 
   private
+
+
+  def test_connection_T88VI
+    # Fetch config
+    get_config
+    true
+  rescue
+    false
+  end
+
+
+  def test_connection_T88V
+    # Fetch SDP config data
+    curl T88V_api_url(T88V_endpoint_url(:set, :server_direct_print))
+    true
+  rescue
+    false
+  end
 
 
   # Update only the new settings
@@ -372,14 +400,19 @@ class Epson
 
   def curl(url, type=:get)
     type = "-X #{type.upcase.to_s}"
-    command = "curl --silent --digest --insecure -u #{@username}:#{@password} #{type} #{url}"
-    # log "cURL command: #{command}"
+    command = "curl --connect-timeout 20 --digest --insecure -u #{@username}:#{@password} #{type} #{url}"
+    log "cURL command: #{command}"
 
     # Handle the printer arbitrarily terminating connections.
+    # (Only retry within 6 seconds to allow for timeouts and connection failures)
     result = ""
-    while result === ""
+    start = Time.now
+    while result === "" and Time.now < start+6
       result = `#{command}`
     end
+
+    # If there's still no data, raise an exception
+    raise ConnectionError  if result === ""
 
     return result
   end
