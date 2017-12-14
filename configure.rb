@@ -38,12 +38,12 @@ class Menu
         step_mode
       when :confirm_mode
         step_mode_confirm
+      when :merchant
+        step_merchant
       when :model
         step_model
       when :ip
         step_ip
-      when :merchant
-        step_merchant
       when :autoconfigure
         step_autoconfigure
       end
@@ -101,7 +101,7 @@ class Menu
       return :mode
     end
 
-    :model
+    :merchant
   end
 
 
@@ -115,7 +115,7 @@ class Menu
   # --- Step: IP ------------
   def step_ip
     @ip = prompt_ip
-    :merchant
+    :autoconfigure
   end
 
 
@@ -134,7 +134,7 @@ class Menu
 
 
     @merchant_id = merchant_id
-    :autoconfigure
+    :model
   end
 
 
