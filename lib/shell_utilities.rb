@@ -1,6 +1,6 @@
 # Basic shell I/O methods
 
-#TODO: Add color helpers for *nix platforms
+require 'colorize'
 
 
 # Should be pretty cross-platform
@@ -24,10 +24,10 @@ def prompt(text, choices=[], default=nil)
   has_default = default.present?
 
   prompt_text  = text
-  prompt_text += "  (default: #{default})"  if has_default
+  prompt_text += "  (default: #{default})".light_black  if has_default
 
   choice_text = ""
-  choice_text = "choices: [#{choices.join(", ")}]"  if has_choices
+  choice_text = "choices: [#{choices.join(", ")}]".light_blue  if has_choices
 
 
   printf prompt_text
@@ -51,7 +51,7 @@ def prompt(text, choices=[], default=nil)
   # Restart if there are choices, but the input is not among them
   if choices.present?
     unless choices.include?(choice)
-      printf "Invalid choice.\n\n"
+      printf "Invalid choice.\n\n".light_red
       # wtb real tail-calls :<
       choice = prompt(text, choices, default)
     end

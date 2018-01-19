@@ -1,5 +1,8 @@
 # Actual Epson class
 
+require 'colorize'
+
+
 class Epson
   attr_accessor :model, :password
   attr_reader   :config, :ip
@@ -169,7 +172,7 @@ class Epson
 
 
     if not successful
-      log "Oh no!  Failed to update printer."
+      log "Oh no!  Failed to update printer.".red
       log
       log "result:"
       pp  json
@@ -178,10 +181,11 @@ class Epson
       return false
     end
 
-
-    log "Configured!"
-    log
-    log "Verifying..."
+    unless silent
+      log "Configured!".cyan
+      log
+      log "Verifying..."
+    end
     printer_config = self.get_config["Setting"]
 
 
@@ -205,10 +209,10 @@ class Epson
 
 
     if issues.present?
-      log "Oh no!  There was an issue autoconfiguring the printer."
-      log "Here are the values that failed to set correctly:"
+      log "Oh no!  There was an issue autoconfiguring the printer.".red
+      log "Here are the values that failed to set correctly:".light_black
       issues.each do |issue|
-        log " > #{issue}"
+        log " > ".red + "#{issue}".light_black
       end
 
       ##+ Cannot update password via API yet
@@ -221,7 +225,7 @@ class Epson
 
     ## For debugging.  In production, we will always update the password.
     if not @config[:NewPassword].present?
-      log "Success!"
+      log "Success!".cyan
       log
       log "Restarting printer..."
       return self.reset!
@@ -258,16 +262,18 @@ class Epson
     #   Kernel::exit()
     # end
 
-    log "Success!"
-    log
-    log "Restarting printer..."
+    unless silent
+      log "Success!".cyan
+      log
+      log "Restarting printer..."
+    end
 
     successful = self.reset!
 
 
     ##TODO: dry
     if not successful
-      log "Oh no!  Unable to restart the printer!"
+      log "Oh no!  Unable to restart the printer!".red
       log "Please restart it manually, and check the configuration via its webconfig:"
       log "    Open your browser and visit: http://#{@ip}/"
       log
@@ -364,8 +370,8 @@ class Epson
     elsif json['response']['success'] == 'false'
       log
       log
-      log "---FATAL---"
-      log "Failed to update #{endpoint}"
+      log "---FATAL---".black.on_red
+      log "Failed to update #{endpoint}".red
       log
       log "URL: #{url}"
       log

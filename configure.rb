@@ -5,6 +5,7 @@
 
 
 require 'pp'
+require 'colorize'
 require 'rest-client'  # for communicating with the server
 require 'json'
 
@@ -63,17 +64,29 @@ class Menu
       spacing  = " " * (6 + (10 - @mode.length))
 
       mode_string = spacing + "[ Mode: #{@mode.upcase.to_s} ]"
+      mode_string = mode_string.green  if @mode == :QA
+      mode_string = mode_string.red    if @mode == :PRODUCTION
     end
 
     # Display header
-    printf " ☼ ItsOnMe  --  Epson Printer Configuration #{mode_string}\n"
-    printf "----------------------------------------------------------------------\n"
+    header  = ""
+    header += " ☼ ".cyan.on_blue
+    header += " ItsOnMe".light_blue
+    header += "  --  "
+    header += "Epson Printer Configuration"
+    header += "#{mode_string}\n"
+    header += (("-"*70) + "\n").light_black
+
+    printf header
+
+    # " ☼ ItsOnMe  --  Epson Printer Configuration #{mode_string}\n"
+    # "----------------------------------------------------------------------\n"
 
     # Display printer info, if present.
     printer_info = []
     printer_info << "Model #{@model}"  if @model.present?
     printer_info << "IP: #{@ip}"       if @ip.present?
-    printf printer_info.join(", ")
+    printf printer_info.join(", ").cyan
 
     printf "\n\n"
   end
@@ -155,7 +168,7 @@ class Menu
     # --- Done! ------
 
     printf "\n\n"
-    printf "Goodbye!\n\n"
+    printf "Goodbye!\n\n".cyan
     Kernel::exit()
   end
 
@@ -181,10 +194,10 @@ class Menu
 
     # This text uses "type" instead of "model" since the referenced label makes it confusing.
     printf "Which type of printer are you configuring?\n"
-    printf "This number begins with TM-T88__ and is printed on the label on the\n"
-    printf "right side of the printer, immediately beside \"EPSON\".\n"
-    printf "  ex: EPSON TM-T88VI\n"
-    printf "      answer: vi\n"
+    printf "This number begins with TM-T88__ and is printed on the label on the\n".light_black
+    printf "right side of the printer, immediately beside \"EPSON\".\n".light_black
+    printf "  ex: EPSON TM-T88VI\n".light_black
+    printf "      answer: vi\n".light_black
     printf "\n\n"
 
     type = prompt "Printer type?", ['v', 'vi'], 'vi'
@@ -197,8 +210,9 @@ class Menu
   # --- Prompt: IP ------------
   def prompt_ip
     printf "What's the IP of the printer are you configuring?\n"
-    printf "You can find it on the initial printout. It looks like this:\n"
-    printf "    IP: x.x.x.x\n"
+    printf "You can find it on the initial printout.\n".light_black
+    printf "It looks like this:\n".light_black
+    printf "    IP: x.x.x.x\n".light_black
     printf "\n"
 
     while true  # meh
@@ -226,16 +240,16 @@ class Menu
   # --- Prompt: Password ------------
   def prompt_configure_password(ip, password)
     printf "First, log into the printer.\n"
-    printf "Open your browser and go here:\n"
-    printf "    http://#{ip}\n"
-    printf "Here are the login credentials:\n"
-    printf "    username: epson\n"
-    printf "    password: epson\n"
+    printf "Open your browser and go here:\n".light_black
+    printf "    " + "http://#{ip}\n".light_blue.underline
+    printf "Here are the login credentials:\n".light_black
+    printf "    username: ".light_black + "epson\n"
+    printf "    password: ".light_black + "epson\n"
     printf "\n"
-    printf "After logging in, click the [Password] link at the very bottom of the sidebar.\n"
-    printf "Here are the details:\n"
-    printf "    old password: epson\n"
-    printf "    new password: #{password}\n"
+    printf "After logging in, click the " + "[Password]".light_blue + " link at the very bottom of the sidebar.\n"
+    printf "Here are the details:\n".light_black
+    printf "    old password: ".light_black + "epson\n"
+    printf "    new password: ".light_black + "#{password}\n"
     printf "\n"
     printf "\n"
     printf "------------\n"
@@ -264,12 +278,12 @@ class Menu
     # Failure response
     if json['status'] == 0
       printf "\n\n"
-      printf json['data']
+      printf json['data'].red
       printf "\n\n"
-      printf "The merchant is either not set up for Epson yet,\n"
-      printf "or already has an associated printer.\n"
+      printf "The merchant is either not set up for Epson yet,\n".red
+      printf "or already has an associated printer.\n".red
       printf "\n"
-      printf "Try another merchant!"
+      printf "Try another merchant!".light_red
       printf "\n\n\n"
 
       return false
@@ -277,16 +291,16 @@ class Menu
 
     # Success!  Display merchant info
     printf "\n\n"
-    printf "Selected merchant #{json['data']['id']}:"
-    printf "\n  Name:     " + json['data']['merchant_name'].to_s
-    printf "\n  Location: " + json['data']['location'].to_s
+    printf "Selected merchant ".cyan + "#{json['data']['id']}" + ":".cyan
+    printf "\n  Name:     ".cyan + json['data']['merchant_name'].to_s
+    printf "\n  Location: ".cyan + json['data']['location'].to_s
     printf "\n\n\n"
 
     return true
 
   rescue RestClient::Exception => e
     printf "\n"
-    printf "An error occured:  " + e.message
+    printf ("An error occured:  " + e.message).red
     printf "\n\n\n"
     return false
   end
@@ -334,7 +348,7 @@ class Menu
 
     if config.nil?
       printf "\n\n"
-      printf "Could not fetch the printer config from the server.\n\n"
+      printf ("Could not fetch the printer config from the server.\n\n").red
       return
     end
 
@@ -348,17 +362,18 @@ class Menu
       # Tell the user to configure the printer's password
       prompt_configure_password(ip, password)
 
+      # Display menu again
+      clear_screen
+      display_menu
+
       printf "Testing printer connection..."
       success = printer.test_connection
       printf "\n"
 
       unless success
-        # Display menu again
-        clear_screen
-        display_menu
         # Display error message
-        printf "Error: Unable to connect to the printer.\n"
-        printf "       Please set the password again!\n"
+        printf "Error: Unable to connect to the printer.\n".red
+        printf "       Please set the password again!\n".red
         printf "\n\n"
       end
     end
@@ -369,27 +384,37 @@ class Menu
     printf "Autoconfiguring!\n"
 
     # Set up the data
-    printf(" | Server Direct Print...\n")
-    printer.set_sdp(           config[:sdp_url],    config[:sdp_interval],    config[:id], config[:printer_name])
-    printf(" | Status Notification...\n")
-    printer.set_status(        config[:status_url], config[:status_interval], config[:id], config[:printer_name])
-    printf(" | Administrator...\n")
-    printer.set_administrator( config[:administrator], config[:location])
-    # printf(" | Password...\n")
-    # printer.set_password(      config[:password])
+    printf " | Server Direct Print...\n"
+    printer.set_sdp           active: true, url: config[:sdp_url],    interval: config[:sdp_interval],    id: config[:id], name: config[:printer_name]
+    sleep 0.125
+
+    printf " | Status Notification...\n"
+    printer.set_status        active: true, url: config[:status_url], interval: config[:status_interval], id: config[:id], name: config[:printer_name]
+    sleep 0.125
+
+    printf " | Administrator...\n"
+    printer.set_administrator admin: config[:administrator], location: config[:location]
+    sleep 0.125
+
+    # printf " | Password...\n"
+    # printer.set_password       password: config[:password]
+    # sleep 0.125
 
     # and send it to the printer!
-    printf(" | Applying settings...\n")
+    printf " | Applying settings...\n"
     printer.apply!
 
     printf "Done!\n"
     printf "\n"
 
+
+
+
     # send_test_redemption(mode, id)
 
   rescue => e
-    printf "Something went wrong :(\n"
-    printf "details:\n"
+    printf "Something went wrong :(\n".red
+    printf "details:\n".red
     pp e
     pp e.message
     printf "\n\n"
@@ -436,8 +461,8 @@ class Menu
     # Failure response
     if json["status"] == 0
       printf "\n\n"
-      printf "Something went wrong.\n"
-      printf "Here's the details:\n"
+      printf "Something went wrong.\n".red
+      printf "Here's the details:\n".red
       pp json
       printf "\n\n"
 
@@ -469,8 +494,8 @@ class Menu
 
   rescue RestClient::Exception => e
     printf "\n\n"
-    printf "Something went wrong.\n"
-    printf "Here's the details:\n"
+    printf "Something went wrong.\n".red
+    printf "Here's the details:\n".red
     pp e.message
     printf "\n\n"
 
