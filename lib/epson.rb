@@ -426,6 +426,15 @@ class Epson
 
 
   def url_add_put_data(url, data)
+    # Notes for future efforts in this function:
+    #   Time spent trying to make escaped quotes bash-parsable: 0.5 hours
+    #
+    #   In bash, a single quote may not occur between single quotes, even when preceded by a backslash.
+    #   so instead, I'll wrap the curl data in escaped double-quotes
+    #
+    #   Also, gsub behaves unexpectedly when used to escape single quotes; here's why:
+    #   https://stackoverflow.com/questions/2180322/ruby-gsub-doesnt-escape-single-quotes
+
     "#{url} -d '#{data.to_json}'"
   end
 
