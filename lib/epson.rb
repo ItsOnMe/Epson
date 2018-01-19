@@ -449,11 +449,12 @@ class Epson
 
 
   def curl(url, type=:get)
-    type = "-X #{type.upcase.to_s}"
-    command = "curl --silent --connect-timeout 20 --digest --insecure -u #{@username}:#{@password} #{type} #{url}"
+    type    = "-X #{type.upcase.to_s}"
+    silent  = "--silent"
+    command = "curl #{silent} --connect-timeout 20 --digest --insecure -u #{@username}:#{@password} #{type} #{url}"
 
-    # Handle the printer arbitrarily terminating connections.
-    # (Only retry within 6 seconds to allow for timeouts and connection failures)
+    # Retry within 6 seconds to handle the printer arbitrarily terminating connections.
+    # Everything else is a timeout or connection failure.
     result = ""
     start = Time.now
     while result === "" and Time.now < start+6
