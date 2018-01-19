@@ -521,14 +521,14 @@ end
 
 
 
-$printervi = Epson.new(:T88VI, "10.0.0.95")
-# $printer.set_password 'epson'
-$printervi.set_sdp      "http://test-sdp.itson.me",     60, "cl_test_id--6", "autoconfigure_qa_printer--6"
-# $printer.set_status   "http://test-status.itson.me", 240, "cl_test_id--6", "autoconfigure_qa_printer--6"
+$pvi = Epson.new(:T88VI, "10.0.0.113")
+# $printer.set_password password: 'epson'
+$pvi.set_sdp      active: true, url: "http://test-sdp.itson.me",    interval: 60,  id: "cl_test_id--6", name: "autoconfigure_qa_printer--6"
+$pvi.set_status   active: true, url: "http://test-status.itson.me", interval: 240, id: "cl_test_id--6", name: "autoconfigure_qa_printer--6"
 
 
 
-$printerv = Epson.new(:T88VI, "10.0.0.91")
-# $printer.set_password 'epson'
-$printerv.set_sdp      "http://test-sdp.itson.me",     60, "cl_test_id-5", "autoconfigure_qa_printer--5"
-# $printer.set_status   "http://test-status.itson.me", 240, "cl_test_id--5", "autoconfigure_qa_printer--5"
+$pv = Epson.new(:T88VI, "10.0.0.91")
+# $printer.set_password password: 'epson'
+$pv.set_sdp      active: true, url: "http://test-sdp.itson.me",    interval: 60,  id: "cl_test_id-5",  name: "autoconfigure_qa_printer--5"
+$pv.set_status   active: true, url: "http://test-status.itson.me", interval: 240, id: "cl_test_id--5", name: "autoconfigure_qa_printer--5"

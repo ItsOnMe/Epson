@@ -49,33 +49,51 @@ class Epson
   end
 
 
-  def set_password(password='')
+  def set_password password:''
     @config[:NewPassword] = password
   end
 
-  def set_administrator(admin, location)
-    @config[:administrator] = {
+  def set_administrator(admin:nil, location:nil)
+    @config[:administrator] ||= {}
+    @config[:administrator].merge!({
       Administrator: admin,
       Location: location
-    }
+    }.compact)
   end
 
-  def set_sdp(url, interval, id, name)
-    @config[:sdp] = {
-      url: url,
-      interval: interval.to_s,  # Printer wants a string, not a number
-      id: id.to_s,
-      name: name
-    }
+  def set_epos(active:nil)
+    active = (active ? "ON" : "OFF")  unless active.nil?
+
+    @config[:epos] ||= {}
+    @config[:epos].merge!({
+      active:   active
+    }.compact)
   end
 
-  def set_status(url, interval, id, name)
-    @config[:status] = {
-      url: url,
-      interval: interval.to_s,  # Printer wants a string, not a number
-      id: id.to_s,
-      name: name
-    }
+  def set_sdp(active:nil, url:nil, interval:nil, id:nil, name:nil)
+    active = (active ? "ON" : "OFF")  unless active.nil?
+
+    @config[:sdp] ||= {}
+    @config[:sdp].merge!({
+      active:   active,
+      url:      url,
+      interval: interval,
+      id:       id,
+      name:     name
+    }.compact)
+  end
+
+  def set_status(active:nil, url:nil, interval:nil, id:nil, name:nil)
+    active = (active ? "ON" : "OFF")  unless active.nil?
+
+    @config[:status] ||= {}
+    @config[:status].merge!({
+      active:   active,
+      url:      url,
+      interval: interval,
+      id:       id,
+      name:     name
+    }.compact)
   end
 
   # ------
