@@ -150,6 +150,7 @@ class Epson
     if @config[:administrator]
       # The T88VI currently does not accept Administrator information.
       settings[:Administrator] = @config[:administrator].extract(:Administrator, :Location)
+      settings[:Administrator][:Location].gsub!(/'/, '')  # Strip out single quotes because they cause shell parsing issues
     end
 
     if @config[:sdp]
