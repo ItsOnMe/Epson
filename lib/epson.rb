@@ -142,38 +142,45 @@ class Epson
 
 
   # Update only the new settings
-  def apply_T88VI!
+  def apply_T88VI!(silent:false)
     data     = { Setting: Hash.new }
     settings = data[:Setting]  # Shortcut
 
     # ------ Construct JSON ------
     if @config[:administrator]
-      # The T88VI does not accept Administrator information.
+      # The T88VI currently does not accept Administrator information.
       settings[:Administrator] = @config[:administrator].extract(:Administrator, :Location)
     end
 
     if @config[:sdp]
       settings[:ServerDirectPrint] = {
-        Active:    "ON",
-        Url1:      @config[:sdp][:url],          # Set the first of three URLs and Intervals
-        Interval1: @config[:sdp][:interval],
-        ID:        @config[:sdp][:id],
+        Active:    @config[:sdp][:active],
+        Url1:      @config[:sdp][:url],           # Set the first of three URLs and Intervals
+        Interval1: @config[:sdp][:interval].to_s, # Printer wants a string
+        ID:        @config[:sdp][:id].to_s,
         Name:      @config[:sdp][:name],
       }
     end
 
     if @config[:status]
       settings[:StatusNotification] = {
-        Active:    "ON",
-        Url:       @config[:status][:url],       # There's only a single URL and Interval
-        Interval:  @config[:status][:interval],
-        ID:        @config[:status][:id],
+        Active:    @config[:status][:active],
+        Url:       @config[:status][:url],           # There's only a single URL and Interval
+        Interval:  @config[:status][:interval].to_s, # Printer wants a string
+        ID:        @config[:status][:id].to_s,
         Name:      @config[:status][:name]
       }
     end
 
+    if @config[:epos]
+      settings[:"ePOS-Print"] = {
+        Active:    @config[:epos][:active]
+      }
+    end
+
+
     if settings.empty?
-      log "Nothing to update."
+      log "Nothing to update."  unless silent
       return false
     end
 
@@ -210,18 +217,21 @@ class Epson
     # ------ Verify config ------
 
     issues = []
+    if @config[:epos].present?
+      issues.push "ePOS-Print -- Active"            if printer_config["ePOS-Print"]["Active"]           != @config[:epos][:active]
+    end
     if @config[:sdp].present?
-      issues.push "ServerDirectPrint -- Active"     if printer_config["ServerDirectPrint"]["Active"]    != "ON"
+      issues.push "ServerDirectPrint -- Active"     if printer_config["ServerDirectPrint"]["Active"]    != @config[:sdp][:active]
       issues.push "ServerDirectPrint -- Url1"       if printer_config["ServerDirectPrint"]["Url1"]      != @config[:sdp][:url]
-      issues.push "ServerDirectPrint -- Interval1"  if printer_config["ServerDirectPrint"]["Interval1"] != @config[:sdp][:interval]
-      issues.push "ServerDirectPrint -- ID"         if printer_config["ServerDirectPrint"]["ID"]        != @config[:sdp][:id]
+      issues.push "ServerDirectPrint -- Interval1"  if printer_config["ServerDirectPrint"]["Interval1"] != @config[:sdp][:interval].to_s
+      issues.push "ServerDirectPrint -- ID"         if printer_config["ServerDirectPrint"]["ID"]        != @config[:sdp][:id].to_s
       issues.push "ServerDirectPrint -- Name"       if printer_config["ServerDirectPrint"]["Name"]      != @config[:sdp][:name]
     end
     if @config[:status].present?
-      issues.push "StatusNotification -- Active"    if printer_config["StatusNotification"]["Active"]   != "ON"
+      issues.push "StatusNotification -- Active"    if printer_config["StatusNotification"]["Active"]   != @config[:status][:active]
       issues.push "StatusNotification -- Url"       if printer_config["StatusNotification"]["Url"]      != @config[:status][:url]
-      issues.push "StatusNotification -- Interval"  if printer_config["StatusNotification"]["Interval"] != @config[:status][:interval]
-      issues.push "StatusNotification -- ID"        if printer_config["StatusNotification"]["ID"]       != @config[:status][:id]
+      issues.push "StatusNotification -- Interval"  if printer_config["StatusNotification"]["Interval"] != @config[:status][:interval].to_s
+      issues.push "StatusNotification -- ID"        if printer_config["StatusNotification"]["ID"]       != @config[:status][:id].to_s
       issues.push "StatusNotification -- Name"      if printer_config["StatusNotification"]["Name"]     != @config[:status][:name]
     end
 
