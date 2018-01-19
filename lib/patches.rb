@@ -23,4 +23,15 @@ class Hash
     end
     result
   end
+
+  # Remove nil values, similar to Array#compact
+  def compact!
+    delete_if { |k,v|
+      v.nil?
+    }
+  end
+
+  def compact
+    self.dup.compact!
+  end
 end
